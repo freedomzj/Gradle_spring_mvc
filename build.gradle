@@ -30,3 +30,117 @@ jettyRun {
     httpPort = 9090
     contextPath = 'springmvc'
 }
+
+version = new ProjectVersion(0, 1)
+
+
+ext.versionFile = file('version.properties')
+//配置任务没有左移操作符
+task loadVersion {
+    project.version = readVersion()
+}
+
+ProjectVersion readVersion() {
+    logger.quiet 'Reading the version file.'
+    //如果文件不存在抛出异常
+    if(!versionFile.exists()) {
+        throw new GradleException("Required version file does not exist:$versionFile.canonicalPath")
+    }
+
+    Properties versionProps = new Properties()
+
+//groovy的file实现了添加方法通过新创建的流来读取
+
+    versionFile.withInputStream { stream ->
+        versionProps.load(stream)
+    }
+//在Groovy中如果这是最后一个语句你可以省略return关键字
+    new ProjectVersion(versionProps.major.toInteger(),
+            versionProps.minor.toInteger(), versionProps.release.toBoolean())
+}
+
+task printVersion << {
+    logger.quiet "Version: $version"
+}
+
+/*task makeReleaseVersion(group: 'versioning', description: 'Makes project a release version.') << {
+    version.release = true
+    //ant的propertyfile任务提供很方便的方法来修改属性文件
+    ant.propertyfile(file: versionFile) {
+        entry(key: 'release', type:'string',operation: '=', value: 'true')
+    }
+}*/
+
+class ProjectVersion {
+    Integer major
+    Integer minor
+    Boolean release
+
+    ProjectVersion(Integer major, Integer minor) {
+        this.major = major
+        this.minor = minor
+        this.release = Boolean.FALSE
+    }
+
+    ProjectVersion(Integer major, Integer minor, Boolean release) {
+        this(major, minor)
+        this.release = release
+    }
+
+    @Override
+    String toString() {
+        //只有release为false的时候才添加后缀SNAPSHOTprintVersion
+        "$major.$minor${release ? '' : '-SNAPSHOT'}"
+    }
+}
+
+class ReleaseVersionTask extends DefaultTask {
+    //通过注解声明任务的输入和输出
+    @Input Boolean release
+    @OutputFile File destFile
+
+    ReleaseVersionTask() {
+        //在构造器里设置任务的分组和描述
+        group = 'versioning'
+        description = 'Makes project a release version.'
+    }
+    //通过注解声明要执行的任务
+    @TaskAction
+    void start() {
+        project.version.release = true
+        ant.propertyfile(file: destFile) {
+            entry(key: 'release', type: 'string', operation: '=', value: 'true')
+        }
+    }
+}
+
+
+//定义一个ReleaseVersionTask类型的任务
+task makeReleaseVersion(type: ReleaseVersionTask) {
+    //设定任务属性
+    release = version.release
+    destFile = versionFile
+}
+
+task createDistribution(type: Zip, dependsOn:     makeReleaseVersion) {
+    //引用war任务的输出
+    from war.outputs.files
+    //把所有文件放进ZIP文件的src目录
+    from(sourceSets*.allSource) {
+        into 'src'
+    }
+    //添加版本文件
+    from(rootDir) {
+        include versionFile.name
+    }
+}
+
+task backupReleaseDistribution(type: Copy) {
+    //引用createDistribution的输出
+    from createDistribution.outputs.files
+    into "$buildDir/backup"
+}
+
+task release(dependsOn: backupReleaseDistribution)     << {
+    logger.quiet 'Releasing the project...'
+}
