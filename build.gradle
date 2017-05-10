@@ -22,7 +22,10 @@ dependencies {
     testCompile group: 'junit', name: 'junit', version: '4.11'
     providedCompile 'javax.servlet:servlet-api:2.5'
     compile 'jstl:jstl:1.2'
+    compile group: 'org.codehaus.groovy', name: 'groovy-all', version: '2.4.7'
+    compile group: 'org.codehaus.groovy', name: 'groovy', version: '2.4.7'
     compile 'org.springframework:spring-webmvc:4.3.4.RELEASE'
+    compile group: 'com.alibaba', name: 'fastjson', version: '1.2.31'
 
 }
 
@@ -58,6 +61,36 @@ ProjectVersion readVersion() {
     new ProjectVersion(versionProps.major.toInteger(),
             versionProps.minor.toInteger(), versionProps.release.toBoolean())
 }
+
+
+/*class ReleaseVersionTask extends DefaultTask {
+    //通过注解声明任务的输入和输出
+    @Input
+    Boolean release
+    @OutputFile
+    File destFile
+
+    ReleaseVersionTask() {
+        //在构造器里设置任务的分组和描述
+        group = 'versioning'
+        description = 'Makes project a release version.'
+    }
+    //通过注解声明要执行的任务
+    @TaskAction
+    void start() {
+        new File(baseDir, 'haiku.txt').eachLine { line, nb ->
+            println "Line $nb: $line"
+        }
+        project.version.release = true
+        ant.propertyfile(file: destFile) {
+            entry(key: 'release', type: 'string', operation: '=', value: 'true')
+        }
+    }
+
+    public static void Main(String[] args) {
+        println(1);
+    }
+}*/
 
 task printVersion << {
     logger.quiet "Version: $version"
