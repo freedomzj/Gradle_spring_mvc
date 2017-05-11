@@ -12,7 +12,8 @@ import java.util.List;
 /**
  * Created by zengjie on 17/5/10.
  */
-@Controller("user")
+@Controller
+@RequestMapping("user")
 public class UserController {
 
     @RequestMapping("list")

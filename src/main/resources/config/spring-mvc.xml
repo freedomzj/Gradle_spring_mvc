@@ -36,4 +36,13 @@ xmlns:tx="http://www.springframework.org/schema/tx"
 		<!-- 前缀 -->
 		<property name="suffix" value=".jsp"/>
 	</bean>
+
+	<mvc:interceptors>
+		<mvc:interceptor>
+			<mvc:mapping path="user/**"/>
+			<mvc:exclude-mapping path="/doLogin"/>
+			<mvc:exclude-mapping path="/login"/>
+			<bean class="com.duowan.interceptor.SystemInterceptor"/>
+		</mvc:interceptor>
+	</mvc:interceptors>
 </beans>
